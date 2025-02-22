@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出退勤管理</title>
+</head>
+<body>
+    <h1>出退勤管理</h1>
+
+    <h2>出勤</h2>
+    <form action="{{ url_for('clock_in') }}" method="POST">
+        <label>スタッフを選択:</label>
+        <select name="staff_id" required>
+            {% for person in staff %}
+                <option value="{{ person.id }}">{{ person.name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">出勤</button>
+    </form>
+
+    <h2>出退勤記録</h2>
+    <table border="1">
+        <tr>
+            <th>スタッフ</th>
+            <th>出勤時刻</th>
+            <th>退勤時刻</th>
+            <th>退勤</th>
+        </tr>
+        {% for record in attendance_records %}
+        <tr>
+            <td>{{ record.staff.name }}</td>
+            <td>{{ record.clock_in }}</td>
+            <td>{{ record.clock_out if record.clock_out else "未退勤" }}</td>
+            <td>
+                {% if not record.clock_out %}
+                <form action="{{ url_for('clock_out', attendance_id=record.id) }}" method="POST">
+                    <button type="submit">退勤</button>
+                </form>
+                {% else %}
+                退勤済み
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <p><a href="{{ url_for('staff_list') }}">スタッフ管理へ</a></p>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>勤務集計</title>
+</head>
+<body>
+    <h1>勤務集計</h1>
+
+    <form method="POST">
+        <label>スタッフ:</label>
+        <select name="staff_id">
+            <option value="">全員</option>
+            {% for staff in staff_list %}
+                <option value="{{ staff.id }}">{{ staff.name }}</option>
+            {% endfor %}
+        </select>
+
+        <label>月:</label>
+        <input type="month" name="work_month">
+
+        <button type="submit">検索</button>
+    </form>
+
+    <h2>勤務時間と給与</h2>
+    <table border="1">
+        <tr>
+            <th>スタッフ</th>
+            <th>勤務月</th>
+            <th>合計勤務時間</th>
+            <th>給与（円）</th>
+        </tr>
+        {% for result in results %}
+        <tr>
+            <td>{{ result.staff_name }}</td>
+            <td>{{ result.work_month }}</td>
+            <td>{{ result.total_hours }} 時間</td>
+            <td>{{ result.salary }} 円</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <p><a href="{{ url_for('attendance') }}">出退勤管理へ</a></p>
+</body>
+</html>
