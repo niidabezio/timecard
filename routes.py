@@ -1,5 +1,5 @@
 import random
-import openai
+import requests
 from flask import render_template, request, redirect, url_for
 from app import app, db
 from models import Staff, Attendance, WorkSummary, Message  # ← Messageを追加
@@ -7,28 +7,36 @@ from datetime import datetime
 from config import Config
 from sqlalchemy.sql import func
 
-# ✅ OpenAI APIのキーを設定
-openai.api_key = Config.OPENAI_API_KEY
-
-def generate_ai_message():
+# ✅ Gemini AI（Google）の API を使ってメッセージを生成
+def generate_gemini_message():
     try:
-        client = openai.OpenAI(api_key=Config.OPENAI_API_KEY)  # ✅ 新しいインターフェースに変更
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "system", "content": "あなたは職場の受付ロボットです。出勤した人に励ましのメッセージを送ってください。"}],
-            max_tokens=50
-        )
-        ai_message = response.choices[0].message.content  # ✅ 新しいレスポンスの書き方に変更
-        print("✅ AIメッセージ生成成功:", ai_message)  # ✅ ログに成功メッセージを出力
-        return ai_message
+        url = "https://generativelanguage.googleapis.com/v1beta3/models/gemini-pro:generateText"
+        headers = {
+            "Content-Type": "application/json"
+        }
+        params = {
+            "key": Config.GEMINI_API_KEY  # ✅ GoogleのAPIキーを使用
+        }
+        data = {
+            "prompt": {
+                "text": "あなたは職場の受付ロボットです。出勤した人に元気が出るメッセージを送ってください。"
+            },
+            "temperature": 0.7,
+            "maxTokens": 50
+        }
+        response = requests.post(url, headers=headers, params=params, json=data)
+        response_json = response.json()
 
-    except openai.OpenAIError as e:  # ✅ `openai.error` ではなく `openai.OpenAIError` を使う
-        print("❌ OpenAI API エラー:", e)
-        return f"⚠️ AIメッセージ生成に失敗しました（{str(e)}）"
+        if "candidates" in response_json and response_json["candidates"]:
+            return response_json["candidates"][0]["output"]
 
+        return "⚠️ AIメッセージの生成に失敗しました"
+    except ValueError as ve:
+        print(ve)
+        return "⚠️ APIキーが設定されていません"
     except Exception as e:
-        print("❌ 予期しないエラー:", e)
-        return f"⚠️ AIメッセージ生成に失敗しました（{str(e)}）"
+        print("❌ Gemini AIエラー:", e)
+        return "⚠️ AIメッセージの生成に失敗しました（エラー）"
     
 @app.route('/attendance')
 def attendance():
@@ -148,7 +156,6 @@ def delete_message(message_id):
         db.session.commit()
     return redirect(url_for('message_list'))
 
-# ✅ 出勤（打刻）時にAIメッセージを生成
 @app.route('/attendance/clock_in', methods=['POST'])
 def clock_in():
     staff_id = request.form.get('staff_id')
@@ -162,24 +169,30 @@ def clock_in():
         db.session.add(new_record)
         db.session.commit()
 
-        # ✅ ランダムなメッセージを取得（AI + 登録メッセージ）
+        # ✅ ランダムな登録メッセージ
         messages = Message.query.all()
-        if messages:
-            random_message = random.choice(messages).message_text
-        else:
-            random_message = "おはようございます！"
+        random_message = random.choice(messages).message_text if messages else "おはようございます！"
 
-        # ✅ AIメッセージを生成
-        ai_message = generate_ai_message()
+        # ✅ Gemini AI を使ってメッセージを生成
+        ai_message = generate_gemini_message()
 
         return render_template('clock_in_success.html', message=random_message, ai_message=ai_message)
 
     return redirect(url_for('attendance'))
+
 
 @app.route('/attendance/clock_out/<int:attendance_id>', methods=['POST'])
 def clock_out(attendance_id):
     record = Attendance.query.get(attendance_id)
     if record and record.clock_out is None:  # まだ退勤していない場合
         record.clock_out = datetime.now().time()
+        db.session.commit()
+    return redirect(url_for('attendance'))
+
+@app.route('/attendance/delete/<int:attendance_id>', methods=['POST'])
+def delete_attendance(attendance_id):
+    record = Attendance.query.get(attendance_id)
+    if record:
+        db.session.delete(record)
         db.session.commit()
     return redirect(url_for('attendance'))

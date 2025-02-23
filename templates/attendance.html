@@ -38,6 +38,8 @@
             <th>出勤時刻</th>
             <th>退勤時刻</th>
             <th>修正</th>
+            <th>削除</th>
+
         </tr>
         {% for record in attendance_records %}
         <tr>
@@ -59,6 +61,12 @@
                     <button type="submit">修正</button>
                 </form>
             </td>
+            <td>  <!-- ✅ 削除ボタン -->
+                <form action="{{ url_for('delete_attendance', attendance_id=record.id) }}" method="POST" onsubmit="return confirm('本当に削除しますか？');">
+                    <button type="submit" style="background-color: red; color: white;">削除</button>
+                </form>
+            </td>
+
             
         </tr>
         {% endfor %}
