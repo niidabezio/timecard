@@ -1,9 +1,27 @@
 import random
+import openai
 from flask import render_template, request, redirect, url_for
 from app import app, db
 from models import Staff, Attendance, WorkSummary, Message  # ← Messageを追加
 from datetime import datetime
+from config import Config
 from sqlalchemy.sql import func
+
+# ✅ OpenAI APIのキーを設定
+openai.api_key = Config.OPENAI_API_KEY
+
+# ✅ ChatGPTを使ってメッセージを生成する関数
+def generate_ai_message():
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # 最新モデルを指定
+            messages=[{"role": "system", "content": "あなたは職場の受付ロボットです。出勤した人に励ましのメッセージを送ってください。"}],
+            max_tokens=50
+        )
+        return response["choices"][0]["message"]["content"]
+    except Exception as e:
+        print("AIメッセージ生成エラー:", e)
+        return "頑張ってください！"  # エラー時のデフォルトメッセージ
 
 @app.route('/attendance')
 def attendance():
@@ -123,7 +141,7 @@ def delete_message(message_id):
         db.session.commit()
     return redirect(url_for('message_list'))
 
-# 出勤（打刻）処理（メッセージを表示するように修正）
+# ✅ 出勤（打刻）時にAIメッセージを生成
 @app.route('/attendance/clock_in', methods=['POST'])
 def clock_in():
     staff_id = request.form.get('staff_id')
@@ -137,8 +155,24 @@ def clock_in():
         db.session.add(new_record)
         db.session.commit()
 
-        # ランダムなメッセージを取得
+        # ✅ ランダムなメッセージを取得（AI + 登録メッセージ）
         messages = Message.query.all()
-        random_message = random.choice(messages).message_text if messages else "おはようございます！"
+        if messages:
+            random_message = random.choice(messages).message_text
+        else:
+            random_message = "おはようございます！"
 
-    return render_template('clock_in_success.html', message=random_message)
+        # ✅ AIメッセージを生成
+        ai_message = generate_ai_message()
+
+        return render_template('clock_in_success.html', message=random_message, ai_message=ai_message)
+
+    return redirect(url_for('attendance'))
+
+@app.route('/attendance/clock_out/<int:attendance_id>', methods=['POST'])
+def clock_out(attendance_id):
+    record = Attendance.query.get(attendance_id)
+    if record and record.clock_out is None:  # まだ退勤していない場合
+        record.clock_out = datetime.now().time()
+        db.session.commit()
+    return redirect(url_for('attendance'))
