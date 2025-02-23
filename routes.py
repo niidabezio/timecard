@@ -10,19 +10,26 @@ from sqlalchemy.sql import func
 # ✅ OpenAI APIのキーを設定
 openai.api_key = Config.OPENAI_API_KEY
 
-# ✅ ChatGPTを使ってメッセージを生成する関数
 def generate_ai_message():
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # 最新モデルを指定
+        client = openai.OpenAI(api_key=Config.OPENAI_API_KEY)  # ✅ 新しいインターフェースに変更
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
             messages=[{"role": "system", "content": "あなたは職場の受付ロボットです。出勤した人に励ましのメッセージを送ってください。"}],
             max_tokens=50
         )
-        return response["choices"][0]["message"]["content"]
-    except Exception as e:
-        print("AIメッセージ生成エラー:", e)
-        return "頑張ってください！"  # エラー時のデフォルトメッセージ
+        ai_message = response.choices[0].message.content  # ✅ 新しいレスポンスの書き方に変更
+        print("✅ AIメッセージ生成成功:", ai_message)  # ✅ ログに成功メッセージを出力
+        return ai_message
 
+    except openai.OpenAIError as e:  # ✅ `openai.error` ではなく `openai.OpenAIError` を使う
+        print("❌ OpenAI API エラー:", e)
+        return f"⚠️ AIメッセージ生成に失敗しました（{str(e)}）"
+
+    except Exception as e:
+        print("❌ 予期しないエラー:", e)
+        return f"⚠️ AIメッセージ生成に失敗しました（{str(e)}）"
+    
 @app.route('/attendance')
 def attendance():
     staff = Staff.query.all()
