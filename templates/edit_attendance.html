@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}打刻修正{% endblock %}
+
+{% block content %}
+<h1>打刻修正</h1>
+
+{% if error %}
+<p style="color: red;">{{ error }}</p>
+{% endif %}
+
+<form action="{{ url_for('edit_attendance', attendance_id=record.id) }}" method="POST">
+    <label>出勤時刻:</label>
+    <input type="time" name="clock_in" value="{{ record.clock_in }}" required>
+
+    <label>退勤時刻:</label>
+    <input type="time" name="clock_out" value="{{ record.clock_out }}" required>
+
+    <label>修正用パスワード:</label>
+    <input type="password" name="password" required>
+
+    <button type="submit">修正</button>
+</form>
+
+<p><a href="{{ url_for('attendance') }}">出退勤管理へ戻る</a></p>
+{% endblock %}

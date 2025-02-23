@@ -9,6 +9,7 @@ from sqlalchemy.sql import func
 def attendance():
     staff = Staff.query.all()
     attendance_records = Attendance.query.all()
+    messages = Message.query.all()  # ✅ 追加：全メッセージを取得
 
     # 時間を「時:分」フォーマットに変換
     for record in attendance_records:
@@ -16,9 +17,31 @@ def attendance():
         if record.clock_out:
             record.clock_out = record.clock_out.strftime('%H:%M')
 
-    return render_template('attendance.html', staff=staff, attendance_records=attendance_records)
+    return render_template('attendance.html', staff=staff, attendance_records=attendance_records, messages=messages)
 
 
+
+@app.route('/attendance/edit/<int:attendance_id>', methods=['GET', 'POST'])
+def edit_attendance(attendance_id):
+    record = Attendance.query.get(attendance_id)
+
+    if request.method == 'POST':
+        password = request.form.get('password')
+        new_clock_in = request.form.get('clock_in')
+        new_clock_out = request.form.get('clock_out')
+
+        # ✅ 簡単なパスワードチェック
+        if password == "1234":  # 修正用パスワード（自由に変更可）
+            if new_clock_in:
+                record.clock_in = datetime.strptime(new_clock_in, '%H:%M').time()
+            if new_clock_out:
+                record.clock_out = datetime.strptime(new_clock_out, '%H:%M').time()
+            db.session.commit()
+            return redirect(url_for('attendance'))
+        else:
+            return render_template('edit_attendance.html', record=record, error="パスワードが違います！")
+
+    return render_template('edit_attendance.html', record=record)
 @app.route('/staff')
 def staff_list():
     staff = Staff.query.all()
