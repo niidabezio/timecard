@@ -16,11 +16,27 @@
             <li><a href="{{ url_for('work_summary') }}">📊 勤務集計</a></li>
             <li><a href="{{ url_for('message_list') }}">💬 メッセージ管理</a></li>
         </ul>
+        <span id="current-time"></span> <!-- ✅ ここに現在時刻を表示 -->
     </nav>
 
     <div class="content">
         {% block content %}{% endblock %}
     </div>
-
+    <script>
+        function updateTime() {
+            let now = new Date();
+            let hours = now.getHours().toString().padStart(2, '0');
+            let minutes = now.getMinutes().toString().padStart(2, '0');
+            let seconds = now.getSeconds().toString().padStart(2, '0');
+            document.getElementById('current-time').textContent = `🕒 ${hours}:${minutes}:${seconds}`;
+        }
+        
+        // 1秒ごとに時間を更新
+        setInterval(updateTime, 1000);
+        
+        // ページ読み込み時にすぐ表示
+        updateTime();
+        </script>
+        
 </body>
 </html>
