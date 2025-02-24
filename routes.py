@@ -68,36 +68,49 @@ HOURLY_WAGE = 1000
 @app.route('/summary', methods=['GET', 'POST'])
 def work_summary():
     staff_list = Staff.query.all()
-    selected_staff_id = request.form.get('staff_id')
-    selected_month = request.form.get('work_month')
-
-    query = db.session.query(
-        Attendance.staff_id,
-        func.strftime('%Y-%m', Attendance.work_date).label('work_month'),
-        func.sum(
-            func.julianday(Attendance.clock_out) - func.julianday(Attendance.clock_in)
-        ).label('total_hours')
-    ).filter(Attendance.clock_out.isnot(None))
-
-    if selected_staff_id:
-        query = query.filter(Attendance.staff_id == selected_staff_id)
-    if selected_month:
-        query = query.filter(func.strftime('%Y-%m', Attendance.work_date) == selected_month)
-
-    query = query.group_by(Attendance.staff_id, 'work_month')
-    summaries = query.all()
-
     results = []
-    for summary in summaries:
-        total_hours = summary.total_hours * 24  # 日数を時間に変換
-        salary = int(total_hours * HOURLY_WAGE)
-        staff_name = Staff.query.get(summary.staff_id).name
-        results.append({
-            'staff_name': staff_name,
-            'work_month': summary.work_month,
-            'total_hours': round(total_hours, 2),
-            'salary': salary
-        })
+
+    if request.method == 'POST':
+        staff_id = request.form.get('staff_id')
+        work_month = request.form.get('work_month')
+
+        query = db.session.query(
+            Attendance.staff_id,
+            Staff.name,
+            Attendance.work_date,
+            func.strftime('%H:%M', Attendance.clock_in).label("clock_in"),
+            func.strftime('%H:%M', Attendance.clock_out).label("clock_out"),
+            func.julianday(Attendance.clock_out) - func.julianday(Attendance.clock_in)
+        ).join(Staff).filter(
+            Attendance.clock_out.isnot(None)  # 退勤が記録されているものだけ
+        )
+
+        if staff_id:
+            query = query.filter(Attendance.staff_id == staff_id)
+
+        if work_month:
+            query = query.filter(func.strftime('%Y-%m', Attendance.work_date) == work_month)
+
+        records = query.all()
+
+        # 各スタッフの月合計時間を計算
+        staff_hours = {}
+        for record in records:
+            work_date = record.work_date
+            work_time = (record[5] * 24) if record[5] is not None else 0  # 日の労働時間（時間単位）
+
+            if record.staff_id not in staff_hours:
+                staff_hours[record.staff_id] = {"name": record.name, "total_hours": 0, "days": []}
+
+            staff_hours[record.staff_id]["total_hours"] += work_time
+            staff_hours[record.staff_id]["days"].append({
+                "date": work_date,
+                "clock_in": record.clock_in,
+                "clock_out": record.clock_out,
+                "work_time": round(work_time, 2)
+            })
+
+        results = list(staff_hours.values())
 
     return render_template('summary.html', staff_list=staff_list, results=results)
 

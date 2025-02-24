@@ -1,50 +1,47 @@
 {% extends "base.html" %}
 
+{% block title %}勤務集計{% endblock %}
+
 {% block content %}
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>勤務集計</title>
-</head>
-<body>
-    <h1>勤務集計</h1>
+<h1>勤務集計</h1>
 
-    <form method="POST">
-        <label>スタッフ:</label>
-        <select name="staff_id">
-            <option value="">全員</option>
-            {% for staff in staff_list %}
-                <option value="{{ staff.id }}">{{ staff.name }}</option>
-            {% endfor %}
-        </select>
-
-        <label>月:</label>
-        <input type="month" name="work_month">
-
-        <button type="submit">検索</button>
-    </form>
-
-    <h2>勤務時間と給与</h2>
-    <table border="1">
-        <tr>
-            <th>スタッフ</th>
-            <th>勤務月</th>
-            <th>合計勤務時間</th>
-            <th>給与（円）</th>
-        </tr>
-        {% for result in results %}
-        <tr>
-            <td>{{ result.staff_name }}</td>
-            <td>{{ result.work_month }}</td>
-            <td>{{ result.total_hours }} 時間</td>
-            <td>{{ result.salary }} 円</td>
-        </tr>
+<form method="POST">
+    <label>スタッフ:</label>
+    <select name="staff_id">
+        <option value="">全員</option>
+        {% for staff in staff_list %}
+            <option value="{{ staff.id }}">{{ staff.name }}</option>
         {% endfor %}
-    </table>
+    </select>
 
-    <p><a href="{{ url_for('attendance') }}">出退勤管理へ</a></p>
-</body>
-</html>
+    <label>月:</label>
+    <input type="month" name="work_month">
+
+    <button type="submit">検索</button>
+</form>
+
+{% for staff in results %}
+<h2>{{ staff.name }}の勤務集計</h2>
+<table border="1">
+    <tr>
+        <th>日付</th>
+        <th>出勤時刻</th>
+        <th>退勤時刻</th>
+        <th>労働時間（時間）</th>
+    </tr>
+    {% for day in staff.days %}
+    <tr>
+        <td>{{ day.date }}</td>
+        <td>{{ day.clock_in }}</td>
+        <td>{{ day.clock_out }}</td>
+        <td>{{ day.work_time }}</td>
+    </tr>
+    {% endfor %}
+    <tr>
+        <td colspan="3"><strong>合計労働時間</strong></td>
+        <td><strong>{{ staff.total_hours | round(2) }} 時間</strong></td>
+    </tr>
+</table>
+{% endfor %}
+
 {% endblock %}
