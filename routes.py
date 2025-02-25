@@ -10,11 +10,19 @@ from sqlalchemy.sql import func
 
 
     
-@app.route('/attendance')
+@app.route('/attendance', methods=['GET'])
 def attendance():
     staff = Staff.query.all()
-    attendance_records = Attendance.query.all()
-    messages = Message.query.all()  # ✅ 追加：全メッセージを取得
+    selected_month = request.args.get('month', datetime.today().strftime('%Y-%m'))  # デフォルトで今月を表示
+
+    # ✅ 最近の出勤を上に（work_date を降順ソート）
+    query = Attendance.query.join(Staff).order_by(Attendance.work_date.desc(), Attendance.clock_in.desc())
+
+    # ✅ 月ごとにフィルタリング
+    if selected_month:
+        query = query.filter(func.strftime('%Y-%m', Attendance.work_date) == selected_month)
+
+    attendance_records = query.all()
 
     # 時間を「時:分」フォーマットに変換
     for record in attendance_records:
@@ -22,7 +30,7 @@ def attendance():
         if record.clock_out:
             record.clock_out = record.clock_out.strftime('%H:%M')
 
-    return render_template('attendance.html', staff=staff, attendance_records=attendance_records, messages=messages)
+    return render_template('attendance.html', staff=staff, attendance_records=attendance_records, selected_month=selected_month)
 
 
 
@@ -161,9 +169,11 @@ def clock_in():
         db.session.add(new_record)
         db.session.commit()
 
-        # ✅ ランダムな登録メッセージ
-        messages = Message.query.all()
-        random_message = random.choice(messages).message_text if messages else "おはようございます！"
+        # ✅ 出勤後に「message.html」へリダイレクト
+        return redirect(url_for('message', staff_id=staff_id))
+
+    return redirect(url_for('attendance'))  # ✅ 失敗した場合は元のページへ
+
 
     
 
@@ -211,3 +221,7 @@ def export_summary(file_type):
 
     return send_file(file_path, as_attachment=True)
 
+@app.route('/attendance/message/<int:staff_id>')
+def message(staff_id):
+    staff = Staff.query.get(staff_id)
+    return render_template('message.html', staff=staff)
