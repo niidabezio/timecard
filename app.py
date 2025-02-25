@@ -1,18 +1,25 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# ✅ セッションの秘密キーを設定（ランダムな文字列でOK）
+app.config["SECRET_KEY"] = "supersecretkey123"  # 🔑 ここに任意の秘密キーを設定
+
+# ✅ データベース設定
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
-# ここでルートを読み込む
+# ✅ Flask-Login の設定
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
+
 from routes import *
 
-
-def index():
-    return render_template('index.html')
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
+

@@ -1,13 +1,72 @@
+# 1. Python標準ライブラリ
 import random
+from datetime import datetime
+
+# 2. サードパーティ（外部ライブラリ）
 import requests
 import pandas as pd  # ✅ エクセル/PDF出力のために追加
-from flask import send_file
-from flask import render_template, request, redirect, url_for
-from app import app, db
-from models import Staff, Attendance, WorkSummary, Message  # ← Messageを追加
-from datetime import datetime
+from io import BytesIO
 from sqlalchemy.sql import func
 
+# 3. Flask関連のインポート
+from flask import send_file, render_template, request, redirect, url_for, flash
+
+# 4. 自作モジュール
+from app import app, db
+from models import Staff, Attendance, WorkSummary, Message, User # ← Messageを追加
+# flasl login
+from flask import Flask, render_template, request, redirect, url_for
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+
+
+
+
+# ✅ Flask-Login の設定
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"  # 未ログイン時のリダイレクト先
+
+# ✅ ユーザーローダー
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# ✅ ログインページ
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        user = User.query.filter_by(username=username).first()
+        
+        if user:
+            print(f"入力されたパスワード: {password}")
+            print(f"データベースのパスワード: {user.password}")
+
+        if user and user.password == password:
+            login_user(user, remember=True)
+            return redirect(url_for("attendance"))  # ✅ ログイン後に出退勤画面へ
+
+        flash("ログイン失敗：ユーザー名またはパスワードが間違っています", "danger")
+
+    return render_template("login.html")
+
+
+# ✅ ログアウト
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("login"))
+
+# ✅ テスト用の管理者アカウント作成（初回のみ使用）
+@app.route("/create_admin")
+def create_admin():
+    admin = User(username="admin", password="admin123")
+    db.session.add(admin)
+    db.session.commit()
+    return "管理者アカウントを作成しました（admin / admin123）"
 
     
 @app.route('/attendance', methods=['GET'])
@@ -69,11 +128,21 @@ def add_staff():
         db.session.commit()
     return redirect(url_for('staff_list'))
 
-
-
-
 # 勤務時間と給与の集計ページ
 HOURLY_WAGE = 1000  # ✅ 時給を設定（自由に変更可）
+
+@app.route('/staff/delete/<int:staff_id>', methods=['POST'])
+def delete_staff(staff_id):
+    staff = Staff.query.get(staff_id)
+
+    if staff:
+        # ✅ 先に出勤記録を削除（外部キー制約を回避）
+        Attendance.query.filter_by(staff_id=staff_id).delete()
+        db.session.delete(staff)
+        db.session.commit()
+
+    return redirect(url_for('staff_list'))
+
 
 @app.route('/summary', methods=['GET', 'POST'])
 def work_summary():
@@ -134,8 +203,10 @@ def work_summary():
 # メッセージ管理ページ
 @app.route('/messages')
 def message_list():
-    messages = Message.query.all()
-    return render_template('messages.html', messages=messages)
+    messages = Message.query.all()  # メッセージ一覧を取得
+    staff_list = Staff.query.all()  # ✅ スタッフ一覧を取得して `messages.html` に渡す
+    return render_template('messages.html', messages=messages, staff_list=staff_list)
+
 
 # メッセージの追加
 @app.route('/messages/add', methods=['POST'])
@@ -169,16 +240,11 @@ def clock_in():
         db.session.add(new_record)
         db.session.commit()
 
-        # ✅ 出勤後に「message.html」へリダイレクト
-        return redirect(url_for('message', staff_id=staff_id))
+        # ✅ 出勤後に「出勤しました」ページへリダイレクト
+        return redirect(url_for('clock_in_success', staff_id=staff_id))
 
     return redirect(url_for('attendance'))  # ✅ 失敗した場合は元のページへ
 
-
-    
-
-
-    return redirect(url_for('attendance'))
 
 
 @app.route('/attendance/clock_out/<int:attendance_id>', methods=['POST'])
@@ -211,17 +277,14 @@ def export_summary(file_type):
     if file_type == "excel":
         file_path = "summary.xlsx"
         df.to_excel(file_path, index=False)
-    elif file_type == "pdf":
-        file_path = "summary.pdf"
-        df.to_csv("summary.csv", index=False)  # PDF変換前にCSV保存
-        import pdfkit
-        pdfkit.from_file("summary.csv", file_path)  # CSVをPDFに変換
+        return send_file(file_path, as_attachment=True)
+
     else:
-        return "無効なファイル形式", 400
+        return "現在 PDF 出力は無効になっています", 400
 
-    return send_file(file_path, as_attachment=True)
-
-@app.route('/attendance/message/<int:staff_id>')
-def message(staff_id):
+@app.route('/attendance/clock_in_success/<int:staff_id>')
+def clock_in_success(staff_id):
     staff = Staff.query.get(staff_id)
-    return render_template('message.html', staff=staff)
+    messages = Message.query.all()  # ✅ メッセージ管理のメッセージを取得
+    return render_template('clock_in_success.html', staff=staff, messages=messages)
+

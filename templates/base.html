@@ -15,6 +15,12 @@
             <li><a href="{{ url_for('attendance') }}">⏰ 出退勤</a></li>
             <li><a href="{{ url_for('work_summary') }}">📊 勤務集計</a></li>
             <li><a href="{{ url_for('message_list') }}">💬 メッセージ管理</a></li>
+            {% if current_user.is_authenticated %}
+        <span>👤 {{ current_user.username }} さん</span>
+        <a href="{{ url_for('logout') }}">🚪 ログアウト</a>
+    {% else %}
+        <a href="{{ url_for('login') }}">🔑 ログイン</a>
+    {% endif %}
         </ul>
         <span id="current-time"></span> <!-- ✅ ここに現在時刻を表示 -->
     </nav>

@@ -1,28 +1,33 @@
 {% extends "base.html" %}
 
+{% block title %}スタッフ管理{% endblock %}
+
 {% block content %}
+<h1>スタッフ管理</h1>
 
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>スタッフ管理</title>
-</head>
-<body>
-    <h1>スタッフ一覧</h1>
-    <ul>
-        {% for person in staff %}
-            <li>{{ person.name }}</li>
-        {% endfor %}
-    </ul>
+<h2>スタッフ一覧</h2>
+<table border="1">
+    <tr>
+        <th>スタッフ名</th>
+        <th>操作</th>
+    </tr>
+    {% for person in staff %}
+    <tr>
+        <td>{{ person.name }}</td>
+        <td>
+            <form action="{{ url_for('delete_staff', staff_id=person.id) }}" method="POST" onsubmit="return confirm('本当に削除しますか？');">
+                <button type="submit" style="background-color: red; color: white;">削除</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
 
-    <h2>新しいスタッフを追加</h2>
-    <form action="{{ url_for('add_staff') }}" method="POST">
-        <input type="text" name="name" placeholder="スタッフ名" required>
-        <button type="submit">追加</button>
-    </form>
-</body>
-</html>
+<h2>新しいスタッフを追加</h2>
+<form action="{{ url_for('add_staff') }}" method="POST">
+    <input type="text" name="name" placeholder="スタッフ名" required>
+    <button type="submit">追加</button>
+</form>
 
+<p><a href="{{ url_for('attendance') }}">出退勤管理へ戻る</a></p>
 {% endblock %}

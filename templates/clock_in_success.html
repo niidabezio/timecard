@@ -4,7 +4,14 @@
 
 {% block content %}
 <h1>出勤しました！</h1>
-<p>📢 登録メッセージ: {{ message }}</p>
+<p>👤 {{ staff.name }} さんの出勤が記録されました。</p>
+
+<h2>メッセージ</h2>
+<ul>
+    {% for message in messages %}
+        <li>{{ message.message_text }}</li>
+    {% endfor %}
+</ul>
 
 <p><a href="{{ url_for('attendance') }}">出退勤管理へ戻る</a></p>
 {% endblock %}

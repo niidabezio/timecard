@@ -1,34 +1,36 @@
 {% extends "base.html" %}
 
-{% block content %}<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>メッセージ管理</title>
-</head>
-<body>
-    <h1>メッセージ管理</h1>
+{% block title %}メッセージ管理{% endblock %}
 
-    <h2>登録済みメッセージ</h2>
-    <ul>
-        {% for message in messages %}
-            <li>
-                {{ message.message_text }}
-                <form action="{{ url_for('delete_message', message_id=message.id) }}" method="POST" style="display:inline;">
-                    <button type="submit">削除</button>
-                </form>
-            </li>
-        {% endfor %}
-    </ul>
+{% block content %}
+<h1>メッセージ管理</h1>
 
-    <h2>新しいメッセージを追加</h2>
-    <form action="{{ url_for('add_message') }}" method="POST">
-        <input type="text" name="message_text" placeholder="メッセージを入力" required>
-        <button type="submit">追加</button>
-    </form>
+<!-- ✅ スタッフ情報を表示 -->
+<h2>スタッフ一覧</h2>
+<ul>
+    {% for person in staff_list %}
+        <li>{{ person.name }}</li>
+    {% endfor %}
+</ul>
 
-    <p><a href="{{ url_for('attendance') }}">出退勤管理へ</a></p>
-</body>
-</html>
+<h2>登録済みメッセージ</h2>
+<ul>
+    {% for message in messages %}
+        <li>
+            {{ message.message_text }}
+            <form action="{{ url_for('delete_message', message_id=message.id) }}" method="POST" style="display:inline;">
+                <button type="submit">削除</button>
+            </form>
+        </li>
+    {% endfor %}
+</ul>
+
+<h2>新しいメッセージを追加</h2>
+<form action="{{ url_for('add_message') }}" method="POST">
+    <input type="text" name="message_text" placeholder="メッセージを入力" required>
+    <button type="submit">追加</button>
+</form>
+
+<p><a href="{{ url_for('attendance') }}">出退勤管理へ戻る</a></p>
+
 {% endblock %}

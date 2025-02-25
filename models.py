@@ -1,4 +1,7 @@
 from app import db
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin  # ✅ 追加
+
 
 class Staff(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -23,3 +26,9 @@ class WorkSummary(db.Model):
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     message_text = db.Column(db.String(255), nullable=False)
+
+# ✅ ログイン用のユーザーモデルを追加
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)  # 本番ではハッシュ化推奨
