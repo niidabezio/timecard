@@ -28,6 +28,7 @@
         <th>出勤時刻</th>
         <th>退勤時刻</th>
         <th>労働時間（時間）</th>
+        <th>給与（円）</th>
     </tr>
     {% for day in staff.days %}
     <tr>
@@ -35,13 +36,23 @@
         <td>{{ day.clock_in }}</td>
         <td>{{ day.clock_out }}</td>
         <td>{{ day.work_time }}</td>
+        <td>{{ day.salary }}</td>
     </tr>
     {% endfor %}
     <tr>
-        <td colspan="3"><strong>合計労働時間</strong></td>
+        <td colspan="3"><strong>合計</strong></td>
         <td><strong>{{ staff.total_hours | round(2) }} 時間</strong></td>
+        <td><strong>{{ staff.total_salary | round(2) }} 円</strong></td>
     </tr>
 </table>
 {% endfor %}
+
+<!-- エクセル / PDF ダウンロードボタン -->
+<form action="{{ url_for('export_summary', file_type='excel') }}" method="POST">
+    <button type="submit">📊 Excelダウンロード</button>
+</form>
+<form action="{{ url_for('export_summary', file_type='pdf') }}" method="POST">
+    <button type="submit">📄 PDFダウンロード</button>
+</form>
 
 {% endblock %}

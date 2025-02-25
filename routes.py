@@ -1,5 +1,7 @@
 import random
 import requests
+import pandas as pd  # ✅ エクセル/PDF出力のために追加
+from flask import send_file
 from flask import render_template, request, redirect, url_for
 from app import app, db
 from models import Staff, Attendance, WorkSummary, Message  # ← Messageを追加
@@ -61,10 +63,10 @@ def add_staff():
 
 
 
-# 時給の設定（例: 1000円）
-HOURLY_WAGE = 1000
 
 # 勤務時間と給与の集計ページ
+HOURLY_WAGE = 1000  # ✅ 時給を設定（自由に変更可）
+
 @app.route('/summary', methods=['GET', 'POST'])
 def work_summary():
     staff_list = Staff.query.all()
@@ -80,7 +82,7 @@ def work_summary():
             Attendance.work_date,
             func.strftime('%H:%M', Attendance.clock_in).label("clock_in"),
             func.strftime('%H:%M', Attendance.clock_out).label("clock_out"),
-            func.julianday(Attendance.clock_out) - func.julianday(Attendance.clock_in)
+            (func.julianday(Attendance.clock_out) - func.julianday(Attendance.clock_in)) * 24
         ).join(Staff).filter(
             Attendance.clock_out.isnot(None)  # 退勤が記録されているものだけ
         )
@@ -93,21 +95,28 @@ def work_summary():
 
         records = query.all()
 
-        # 各スタッフの月合計時間を計算
         staff_hours = {}
         for record in records:
             work_date = record.work_date
-            work_time = (record[5] * 24) if record[5] is not None else 0  # 日の労働時間（時間単位）
+            work_time = record[5] if record[5] is not None else 0  # 労働時間（時間単位）
+            salary = work_time * HOURLY_WAGE  # ✅ 給与計算
 
             if record.staff_id not in staff_hours:
-                staff_hours[record.staff_id] = {"name": record.name, "total_hours": 0, "days": []}
+                staff_hours[record.staff_id] = {
+                    "name": record.name,
+                    "total_hours": 0,
+                    "total_salary": 0,
+                    "days": []
+                }
 
             staff_hours[record.staff_id]["total_hours"] += work_time
+            staff_hours[record.staff_id]["total_salary"] += salary  # ✅ 月の合計給与
             staff_hours[record.staff_id]["days"].append({
                 "date": work_date,
                 "clock_in": record.clock_in,
                 "clock_out": record.clock_out,
-                "work_time": round(work_time, 2)
+                "work_time": round(work_time, 2),
+                "salary": round(salary, 2)  # ✅ 日ごとの給与
             })
 
         results = list(staff_hours.values())
@@ -177,3 +186,28 @@ def delete_attendance(attendance_id):
         db.session.delete(record)
         db.session.commit()
     return redirect(url_for('attendance'))
+
+@app.route('/export_summary/<file_type>', methods=['POST'])
+def export_summary(file_type):
+    # ダミーデータ（本来はDBから取得）
+    data = {
+        "スタッフ名": ["田中", "鈴木", "佐藤"],
+        "月の合計労働時間": [160, 140, 180],
+        "月の給与（円）": [160000, 140000, 180000]
+    }
+
+    df = pd.DataFrame(data)
+
+    if file_type == "excel":
+        file_path = "summary.xlsx"
+        df.to_excel(file_path, index=False)
+    elif file_type == "pdf":
+        file_path = "summary.pdf"
+        df.to_csv("summary.csv", index=False)  # PDF変換前にCSV保存
+        import pdfkit
+        pdfkit.from_file("summary.csv", file_path)  # CSVをPDFに変換
+    else:
+        return "無効なファイル形式", 400
+
+    return send_file(file_path, as_attachment=True)
+
