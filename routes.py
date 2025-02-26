@@ -288,3 +288,6 @@ def clock_in_success(staff_id):
     messages = Message.query.all()  # ✅ メッセージ管理のメッセージを取得
     return render_template('clock_in_success.html', staff=staff, messages=messages)
 
+@app.route("/")
+def home():
+    return render_template("attendance.html")  # ✅ `index.html` を表示
