@@ -4,4 +4,5 @@ Flask-SQLAlchemy
 Flask-Login
 
 requests
+pandas
 Flask-WTF
