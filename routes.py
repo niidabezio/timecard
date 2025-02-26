@@ -290,7 +290,7 @@ def clock_in_success(staff_id):
 
 @app.route("/")
 def home():
-    return render_template("attendance.html")  # ✅ `index.html` を表示
+    return render_template("index.html")  # ✅ `index.html` を表示
 
 @app.errorhandler(500)
 def internal_error(error):
