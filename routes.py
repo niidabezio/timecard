@@ -17,7 +17,7 @@ from models import Staff, Attendance, WorkSummary, Message, User # ← Message�
 # flasl login
 from flask import Flask, render_template, request, redirect, url_for
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-
+from flask import jsonify
 
 
 
@@ -291,3 +291,7 @@ def clock_in_success(staff_id):
 @app.route("/")
 def home():
     return render_template("attendance.html")  # ✅ `index.html` を表示
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({"error": "Internal Server Error", "message": str(error)}), 500
