@@ -48,7 +48,7 @@
         <td>{{ record.work_date }}</td> <!-- ✅ 日付を表示 -->
         <td>{{ record.staff.name }}</td>
         <td>{{ record.clock_in.strftime('%H:%M') if record.clock_in else '' }}</td>
-        <td>{{ record.clock_out if record.clock_out else "未退勤" }}</td>
+　　　　　<td>{{ record.clock_out.strftime('%H:%M') if record.clock_out else '' }}</td>
         <td>
             {% if not record.clock_out %}
             <form action="{{ url_for('clock_out', attendance_id=record.id) }}" method="POST">

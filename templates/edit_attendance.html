@@ -11,10 +11,10 @@
 
 <form action="{{ url_for('edit_attendance', attendance_id=record.id) }}" method="POST">
     <label>出勤時刻:</label>
-    <input type="time" name="clock_in" value="{{ record.clock_in }}" required>
+    <input type="time" name="clock_in" value="{{ record.clock_in.strftime('%H:%M') if record.clock_in else '' }}" required>
 
     <label>退勤時刻:</label>
-    <input type="time" name="clock_out" value="{{ record.clock_out }}" required>
+    <input type="time" name="clock_out" value="{{ record.clock_out.strftime('%H:%M') if record.clock_out else '' }}" required>
 
     <label>修正用パスワード:</label>
     <input type="password" name="password" required>

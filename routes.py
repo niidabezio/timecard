@@ -83,12 +83,6 @@ def attendance():
 
     attendance_records = query.all()
 
-    # 時間を「時:分」フォーマットに変換
-    for record in attendance_records:
-        record.clock_in = record.clock_in.strftime('%H:%M')
-        if record.clock_out:
-            record.clock_out = record.clock_out.strftime('%H:%M')
-
     return render_template('attendance.html', staff=staff, attendance_records=attendance_records, selected_month=selected_month)
 
 
