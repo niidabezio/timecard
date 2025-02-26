@@ -73,6 +73,7 @@ def create_admin():
 def attendance():
     staff = Staff.query.all()
     selected_month = request.args.get('month', datetime.today().strftime('%Y-%m'))  # デフォルトで今月を表示
+    messages = Message.query.all()  # ✅ メッセージを取得
 
     # ✅ 最近の出勤を上に（work_date を降順ソート）
     query = Attendance.query.join(Staff).order_by(Attendance.work_date.desc(), Attendance.clock_in.desc())
@@ -83,7 +84,8 @@ def attendance():
 
     attendance_records = query.all()
 
-    return render_template('attendance.html', staff=staff, attendance_records=attendance_records, selected_month=selected_month)
+    return render_template('attendance.html', staff=staff, attendance_records=attendance_records, selected_month=selected_month, messages=messages)
+
 
 
 
@@ -235,12 +237,14 @@ def clock_in():
         db.session.add(new_record)
         db.session.commit()
 
+
+        print(f"✅ 出勤記録作成: staff_id={staff_id}, clock_in={now}")  # ← デバッグ用
+        print(f"✅ サクセスページへリダイレクト: clock_in_success({staff_id})")  # ← デバッグ用
+
+        return redirect(url_for('clock_in_success', staff_id=staff_id))  # ✅ 正しくリダイレクトされるはず
+
+    print("❌ 出勤失敗: staff_idが取得できなかった")
     return redirect(url_for('attendance'))
-
-        # ✅ 出勤後に「出勤しました」ページへリダイレクト
-    return redirect(url_for('clock_in_success', staff_id=staff_id))
-
-    return redirect(url_for('attendance'))  # ✅ 失敗した場合は元のページへ
 
 
 
@@ -282,9 +286,12 @@ def export_summary(file_type):
 @app.route('/attendance/clock_in_success/<int:staff_id>')
 def clock_in_success(staff_id):
     staff = Staff.query.get(staff_id)
-    messages = Message.query.all()  # ✅ メッセージ管理のメッセージを取得
-    return render_template('clock_in_success.html', staff=staff, messages=messages)
+    if not staff:
+        print(f"❌ エラー: staff_id={staff_id} のスタッフが見つからない")
+        return redirect(url_for('attendance'))  # もしスタッフが存在しない場合、出退勤画面に戻る
 
+    print(f"✅ 出勤サクセスページを表示: staff_id={staff_id}")  # デバッグ用
+    return render_template('clock_in_success.html', staff=staff)
 @app.route("/")
 def home():
     return render_template("index.html")  # ✅ `index.html` を表示

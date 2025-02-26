@@ -6,9 +6,13 @@
 <h1>出退勤アプリ</h1>
 
 <ul>
-    {% for message in messages %}
-        <li>{{ message.message_text }}</li>
-    {% endfor %}
+    {% if messages %}
+        {% for message in messages %}
+            <li>{{ message.message_text }}</li>
+        {% endfor %}
+    {% else %}
+        <li>📢 登録されたメッセージはありません。</li>
+    {% endif %}
 </ul>
 
 <h2>ワンタッチ出勤</h2>

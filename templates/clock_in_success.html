@@ -3,6 +3,11 @@
 {% block title %}出勤完了{% endblock %}
 
 {% block content %}
+
+<form action="{{ url_for('clock_in') }}" method="POST">
+    <input type="hidden" name="staff_id" value="{{ staff.id }}">
+</form>
+
 <h1>出勤しました！</h1>
 <p>👤 {{ staff.name }} さんの出勤が記録されました。</p>
 
