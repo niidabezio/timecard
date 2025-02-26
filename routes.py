@@ -231,17 +231,20 @@ def delete_message(message_id):
 def clock_in():
     staff_id = request.form.get('staff_id')
     if staff_id:
+        now = datetime.now().time()  # ✅ `datetime.time` 型で取得
         new_record = Attendance(
             staff_id=staff_id,
             work_date=datetime.today().date(),
-            clock_in=datetime.now().time(),
+            clock_in=now,  # ✅ 文字列ではなく `datetime.time` を保存
             clock_out=None
         )
         db.session.add(new_record)
         db.session.commit()
 
+    return redirect(url_for('attendance'))
+
         # ✅ 出勤後に「出勤しました」ページへリダイレクト
-        return redirect(url_for('clock_in_success', staff_id=staff_id))
+    return redirect(url_for('clock_in_success', staff_id=staff_id))
 
     return redirect(url_for('attendance'))  # ✅ 失敗した場合は元のページへ
 
